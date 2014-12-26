@@ -1,10 +1,8 @@
 function battleShipSolver() {
-
 	var canvas = document.getElementById('canvas');
 	var ctx = canvas.getContext('2d');
 	var cellW = canvas.width / 10;
 	var cellH = canvas.height / 10;
-	var letterCodes = ['A','B','C','D','E','F','G','H','I','J'];
 	var confirmMode = false;
 	var shotCount = 0;
 
@@ -41,7 +39,7 @@ function battleShipSolver() {
 		},
 	};
 
-	// Set up position arrays
+	// Set up position array
 	var positions = [];
 	for (var i = 0; i < 100; i++) {
 		var row = Math.floor(i / 10),
@@ -58,7 +56,7 @@ function battleShipSolver() {
 		};
 	}
 
-	// Set up references to other objects
+	// Set references to other positions (for convinence & code clarity)
 	for (var i = 0; i < 100; i++) {
 		positions[i].w = (positions[i - 1] && positions[i - 1].row === positions[i].row) ? positions[i - 1] : null;
 		positions[i].e = (positions[i + 1] && positions[i + 1].row === positions[i].row) ? positions[i + 1] : null;
@@ -72,17 +70,8 @@ function battleShipSolver() {
 		redrawBoard();
 	}
 
-	function redrawBoard() {
-		ctx.fillStyle = '#fff';
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		drawGrid();
-		drawShips();
-		drawShots();
-		drawSuperPositions();
-	}
-
 	function updateProbabilities() {
-		var ship, position;
+		var ship, position, lastPosition;
 		var directions = {'w':null, 'n':null, 'e':null, 's':null};
 		for (var i = 0; i < 100; i++) {
 			positions[i].probability = 0;
@@ -91,14 +80,28 @@ function battleShipSolver() {
 			ship = ships[shipName];
 			if (ship.alive) {
 				for (var i = 0; i < 100; i++) {
-					
-					doProbabilities(ship, i, 's');
-					doProbabilities(ship, i, 'e');
+					if (tryShipAtPosition(ship, i, 's', 'confirmed')) {
+						lastPosition = positions[i];
+						for (var j = 0; j < ship.length; j++) {
+							lastPosition.probability++;
+							lastPosition = lastPosition['s'];
+						}
+					}
+					if (tryShipAtPosition(ship, i, 'e', 'confirmed')) {
+						lastPosition = positions[i];
+						for (var j = 0; j < ship.length; j++) {
+							lastPosition.probability++;
+							lastPosition = lastPosition['e'];
+						}
+					}
 				}
 			}
 		}
 		for (var i = 0; i < 100; i++) {
 			position = positions[i];
+			if (position.probability > 0) {
+				position.probability += Math.floor(Math.random() * 3);
+			}
 			if (position.fired && !position.confirmed) {
 				if (position.hit) {
 					for (var direction in directions) {
@@ -112,25 +115,20 @@ function battleShipSolver() {
 		}
 	}
 
-	function doProbabilities (ship, position, orientation) {
+	// Test if a ship will fit at a given position & direction
+	function tryShipAtPosition(ship, position, orientation, propertyToTest) {
 		var lastPosition = positions[position], fit = true;
 		for (var i = 0; i < ship.length; i++) {
-			if (!lastPosition || lastPosition.confirmed) {
+			if (!lastPosition || lastPosition[propertyToTest]) {
 				fit = false;
 				break;
 			}
 			lastPosition = lastPosition[orientation];
 		}
-		if (fit) {
-			lastPosition = positions[position];
-			for (var i = 0; i < ship.length; i++) {
-				lastPosition.probability++;
-				lastPosition = lastPosition[orientation];
-			}
-		}
-		fit = true;
+		return fit;
 	}
 
+	// If this is the last ship, ends the game.
 	function removeShip(shipName) {
 		var allDead = true;
 		ships[shipName].alive = false;
@@ -148,24 +146,16 @@ function battleShipSolver() {
 		redrawBoard();
 	}
 
+	// Random ship placement
+	// Todo: allow custom positions as params
 	function placeShips() {
 		var index, orientation, validPosition = false, lastPosition;
 		for(ship in ships) {
 			while(!validPosition) {
 				index = getRandomPosition();
-				if (!positions[index].occupied) {
-					orientation = (Math.random() * 2 > 1) ? 'e' : 's';
-					lastPosition = positions[index];
-					for (var i = 0; i < ships[ship].length; i++) {
-						if (lastPosition[orientation] && !lastPosition[orientation].occupied) {
-							lastPosition = lastPosition[orientation];
-						} else {
-							break;
-						}
-					}
-					if (i == ships[ship].length - 1) {
-						validPosition = true;
-					}
+				orientation = (Math.random() * 2 > 1) ? 'e' : 's';
+				if (tryShipAtPosition(ships[ship], index, orientation, 'occupied')) {
+					validPosition = true;
 				}
 			}
 			lastPosition = positions[index];
@@ -182,6 +172,7 @@ function battleShipSolver() {
 		return Math.floor(Math.random() * 100);
 	}
 
+	// Sorts the board pieces by probability and find out whether a hit or a miss is found at highest probability position. Re-sorts based on index when finished.
 	function fireNext() {
 		shotCount++;
 
@@ -221,8 +212,9 @@ function battleShipSolver() {
 		}
 	}
 
+	// Fires whenever canvas receives a click if confirmMode is active
 	function updateConfirmations(e) {
-		var index = getIndexFromClickPosition(e.offsetX, e.offsetY);
+		var index = getIndexFromClickPosition(e.layerX, e.layerY);
 		positions[index].confirmed = positions[index].confirmed ? false : true; // flip value
 		redrawBoard();
 		drawConfirmations();
@@ -233,6 +225,22 @@ function battleShipSolver() {
 		pos += Math.floor(x / (canvas.width / 10));
 		pos += Math.floor(y / (canvas.width / 10)) * 10;
 		return pos;
+	}
+
+	function getIndexNicename(index) {
+		var letterCodes = ['A','B','C','D','E','F','G','H','I','J'];
+		return letterCodes[positions[index].row]+','+(positions[index].col + 1);
+	}
+
+	// Todo: combine draw functions into unified loop to increase efficiency & clarity
+
+	function redrawBoard() {
+		ctx.fillStyle = '#fff';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		drawGrid();
+		drawShips();
+		drawShots();
+		drawSuperPositions();
 	}
 
 	function drawConfirmations() {
@@ -246,7 +254,6 @@ function battleShipSolver() {
 
 	function drawGrid() {
 		ctx.strokeStyle = "#000";
-
 		for (var i = 0; i <= 100; i++) {
 			ctx.strokeRect(cellW * (i % 10), cellH * Math.floor(i / 10), cellW, cellH);
 		}
@@ -269,6 +276,7 @@ function battleShipSolver() {
 		for (var i = 0; i < 100; i++) {
 			ctx.fillStyle = 'rgba(0,0,0,'+(positions[i].probability / ceiling * 0.6)+')';
 			ctx.fillRect(cellW * (i % 10) + 1, cellH * Math.floor(i / 10) + 1, cellW - 2, cellH - 2);
+			ctx.fillText(positions[i].probability, cellW * (i % 10) + 2, cellH * Math.floor(i / 10) + cellH - 2);
 		}
 	}
 
@@ -283,10 +291,6 @@ function battleShipSolver() {
 				ctx.fillRect(cellW * (i % 10) + 6, cellH * Math.floor(i / 10) + 6, cellW - 12, cellH - 12);
 			}
 		}
-	}
-
-	function getIndexNicename(index) {
-		return letterCodes[positions[index].row]+','+(positions[index].col + 1);
 	}
 
 	function eventProcessor (e) {
@@ -322,8 +326,8 @@ function battleShipSolver() {
 	}
 
 	var eventHandles = ['step', 'sunk-battleship', 'sunk-destroyer', 'sunk-aircraftcarrier', 'sunk-submarine', 'sunk-patrolboat', 'confirm-hits'];
-	for (event of eventHandles) { // ES6
-		document.getElementById(event).addEventListener('click', eventProcessor);
+	for (var i = 0; i < eventHandles.length; i++) {
+		document.getElementById(eventHandles[i]).addEventListener('click', eventProcessor);
 	}
 
 	drawGrid();

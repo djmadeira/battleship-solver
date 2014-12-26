@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <head>
+<title>Battleship AI</title>
 <script type="text/javascript" src="main.js"></script>
 <style>
 	canvas {
@@ -31,6 +32,18 @@
 </style>
 </head>
 <body>
+	<h1>Battleship "Solver"</h1>
+	<p>Based on a superposition-based algorithm described <a href="http://www.datagenetics.com/blog/december32011/index.html">here</a> (but without the tendency to shoot <em>every</em> position around a hit and a little randomness to make learning the algorithm harder.)</p>
+	<p>Todo:
+		<ul>
+			<li>Weight hits directionally (e.g. if A2 and B2 are hit consecutively, C2 will be weighted over A1)
+			<li>Add option to manually place ships at start
+		</ul>
+	</p>
+	<h2>Directions:</h2>
+	<p>When you're opponent is ready, click the fire button. Ask your opponent if the coordinates indicated are a hit or a miss, and click the Ok (hit) or cancel (miss) button.</p>
+	<p>When your opponent indicates that you have sunk their X ship (which they must do), click the corresponding button. Then click the "Confirm hits" button and click on the positions on the grid where the ship was. Then click "Done".</p>
+	<p>When you have destroyed all the ships, the game is ended and the move count will be displayed.</p>
 	<div class="markers x">
 		<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
 	</div>
@@ -57,4 +70,5 @@
 		<button id="sunk-patrolboat">Sunk Patrolboat (2)</button>
 	</div>
 	<div id="result"></div>
+	<p class="credit">Created by <a href="http://djmadeira.com">DJ Madeira</a>.</p>
 </body>
