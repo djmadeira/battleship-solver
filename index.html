@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<head>
+<script type="text/javascript" src="main.js"></script>
+<style>
+	canvas {
+		border: 1px solid;
+	}
+	.controls {
+		display: inline-block;
+	}
+	.markers {
+		display: inline-block;
+		line-height: 50px;
+		font-size: 30px;
+		top: -10px;
+		position: relative;
+	}
+	.markers.x {
+		display: block;
+		margin-left: 50px;
+	}
+	.markers.x span {
+		display: inline-block;
+		margin-right: 32px;
+	}
+	.controls button {
+		display: block;
+		font-size: 1em;
+		margin-bottom: 0.4em;
+	}
+</style>
+</head>
+<body>
+	<div class="markers x">
+		<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+	</div>
+	<div class="markers y">
+		A<br>
+		B<br>
+		C<br>
+		D<br>
+		E<br>
+		F<br>
+		G<br>
+		H<br>
+		I<br>
+		J<br>
+	</div>
+	<canvas id="canvas" width="500" height="500"></canvas>
+	<div class="controls">
+		<button id="step">Fire</button>
+		<button id="confirm-hits">Confirm hits</button>
+		<button id="sunk-aircraftcarrier">Sunk Aircraft Carrier (5)</button>
+		<button id="sunk-battleship">Sunk Battleship (4)</button>
+		<button id="sunk-destroyer">Sunk Destroyer (3)</button>
+		<button id="sunk-submarine">Sunk Submarine (3)</button>
+		<button id="sunk-patrolboat">Sunk Patrolboat (2)</button>
+	</div>
+	<div id="result"></div>
+</body>
