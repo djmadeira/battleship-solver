@@ -5,6 +5,7 @@ function battleShipSolver() {
 	var cellH = canvas.height / 10;
 	var confirmMode = false;
 	var shotCount = 0;
+	var randomness = 3;
 
 	var ships = {
 		'battleship': {
@@ -71,7 +72,7 @@ function battleShipSolver() {
 	}
 
 	function updateProbabilities() {
-		var ship, position, lastPosition;
+		var ship, position, lastPosition, hitStreak = 0;
 		var directions = {'w':null, 'n':null, 'e':null, 's':null};
 		for (var i = 0; i < 100; i++) {
 			positions[i].probability = 0;
@@ -100,17 +101,25 @@ function battleShipSolver() {
 		for (var i = 0; i < 100; i++) {
 			position = positions[i];
 			if (position.probability > 0) {
-				position.probability += Math.floor(Math.random() * 3);
+				position.probability += Math.floor(Math.random() * randomness);
 			}
-			if (position.fired && !position.confirmed) {
-				if (position.hit) {
+			if (position.fired) {
+				if (position.hit && !position.confirmed) {
 					for (var direction in directions) {
-						if (position[direction] && !position[direction].confirmed && position[direction].probability > 0) {
-							position[direction].probability += 15;
+						lastPosition = position;
+						hitStreak = 1;
+						while(lastPosition[direction] && lastPosition[direction].hit && !lastPosition[direction].confirmed) {
+							hitStreak++;
+							lastPosition = lastPosition[direction];
+						}
+						lastPosition = lastPosition[direction];
+						if (lastPosition && !lastPosition.fired) {
+							lastPosition.probability += hitStreak * 10;
 						}
 					}
 				}
-				positions[i].probability = -1;
+				// All positions that have already been fired at should have the lowest probability
+				position.probability = -1;
 			}
 		}
 	}
@@ -128,11 +137,11 @@ function battleShipSolver() {
 		return fit;
 	}
 
-	// If this is the last ship, ends the game.
 	function removeShip(shipName) {
 		var allDead = true;
 		ships[shipName].alive = false;
 
+		// If this is the last ship, end the game.
 		for (var ship in ships) {
 			if (ships[ship].alive) {
 				allDead = false;
@@ -172,7 +181,7 @@ function battleShipSolver() {
 		return Math.floor(Math.random() * 100);
 	}
 
-	// Sorts the board pieces by probability and find out whether a hit or a miss is found at highest probability position. Re-sorts based on index when finished.
+	// Sorts the board pieces by probability and finds out whether a hit or a miss is found at highest probability position. Re-sorts based on index when finished.
 	function fireNext() {
 		shotCount++;
 
@@ -186,6 +195,7 @@ function battleShipSolver() {
 
 		positions[0].fired = true;
 		var hit = positions[0].hit = confirm('hit at '+getIndexNicename(0)+'?');
+		// misses are set to confirmed to improve the probability engine
 		positions[0].confirmed = hit ? false : true;
 		var index = positions[0].index;
 		positions[0].probability = -1;
